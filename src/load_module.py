@@ -1,5 +1,6 @@
 import importlib
 import os
+import sys
 
 
 def load_module_from_path(file_path):
@@ -22,5 +23,6 @@ def load_module_from_path(file_path):
         raise ImportError(f"Could not load spec for {file_path}")
     
     module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
     spec.loader.exec_module(module)
     return module

@@ -1,6 +1,13 @@
 # Adapted from the CPython codebase (https://github.com/python/cpython)
 import icontract
+from typing import List, Optional, Any, Callable
 
+@icontract.snapshot(lambda lo: lo, name="lo_start")
+@icontract.snapshot(lambda a, hi: hi if hi is not None else len(a), name="hi_start")
+@icontract.require(
+    lambda a, x: all(isinstance(x, type(elem)) for elem in a),
+    "x must match the type of all elements in a."
+)
 @icontract.require(lambda a, key: 
                    all(a[i] <= a[i + 1] for i in range(len(a) - 1)) if key is None else 
                    all(key(a[i]) <= key(a[i + 1]) for i in range(len(a) - 1)), 
@@ -11,17 +18,17 @@ import icontract
 @icontract.require(lambda lo, hi, a: 
                    hi is None or (lo <= hi <= len(a)), 
                    "hi must be None or within valid bounds")
-@icontract.ensure(lambda result, a, x, key: 
-                  all(a[i] <= x for i in range(result)) if key is None else 
-                  all(key(a[i]) <= x for i in range(result)), 
+@icontract.ensure(lambda OLD, result, a, x, key: 
+                  all(a[i] <= x for i in range(OLD.lo_start, result)) if key is None else 
+                  all(key(a[i]) <= x for i in range(OLD.lo_start, result)), 
                   "Elements in a[:result] must be <= x")
-@icontract.ensure(lambda result, a, x, key: 
-                  all(a[i] > x for i in range(result, len(a))) if key is None else 
-                  all(key(a[i]) > x for i in range(result, len(a))), 
+@icontract.ensure(lambda OLD, result, a, x, key: 
+                  all(a[i] > x for i in range(result, OLD.hi_start)) if key is None else 
+                  all(key(a[i]) > x for i in range(result, OLD.hi_start)), 
                   "Elements in a[result:] must be > x")
 @icontract.ensure(lambda result, a: 0 <= result <= len(a), 
                   "Result index must be within valid bounds")
-def bisect_right(a, x, lo=0, hi=None, *, key=None):
+def bisect_right(a: List[Any], x: Any, lo: int = 0, hi: Optional[int] = None, *, key: Optional[Callable[[Any], Any]] = None):
     """
     Find the index to insert `x` into a sorted list `a` while maintaining order.
 
@@ -53,20 +60,23 @@ def bisect_right(a, x, lo=0, hi=None, *, key=None):
     """
     if hi is None:
         hi = len(a)
+
+    lo_start = lo
+    hi_start = hi
     
     if key is None:
         while lo < hi:
-            assert all(a[i] <= x for i in range(lo)),               "Loop invariant: Elements in a[:lo] must be <= x."
-            assert all(a[i] > x for i in range(hi, len(a))),        "Loop invariant: Elements in a[hi:] must be > x."
+            assert all(a[i] <= x for i in range(lo_start, lo)),         "Loop invariant: Elements in a[lo_start:lo] must be <= x."
+            assert all(a[i] > x for i in range(hi, hi_start)),          "Loop invariant: Elements in a[hi:hi_start] must be > x."
             mid = (lo + hi) // 2
-            if x > a[mid]:
+            if x < a[mid]:
                 hi = mid
             else:
                 lo = mid + 1
     else:
         while lo < hi:
-            assert all(key(a[i]) <= x for i in range(lo)),          "Loop invariant: key(a[:lo]) elements must be <= x."
-            assert all(key(a[i]) > x for i in range(hi, len(a))),   "Loop invariant: key(a[hi:]) elements must be > x."
+            assert all(key(a[i]) <= x for i in range(lo_start, lo)),    "Loop invariant: key(a[lo_start:lo]) elements must be <= x."
+            assert all(key(a[i]) > x for i in range(hi, hi_start)),     "Loop invariant: key(a[hi:hi_start]) elements must be > x."
             mid = (lo + hi) // 2
             if x < key(a[mid]):
                 hi = mid

@@ -1,10 +1,16 @@
 import os
 import datetime
+import re
+from crosshair.main import long_describe_message
 
 ROOT_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "../"))
 LOGS_PATH = os.path.join(ROOT_PATH, "logs")
 
-def log_analysis_results(target, analysis_results, console_dump):
+def remove_ansi(text):
+    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+    return ansi_escape.sub('', text)
+
+def log_analysis_results(target, analysis_results, analysis_options, console_dump):
     os.makedirs(LOGS_PATH, exist_ok=True)
 
     timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
@@ -24,8 +30,11 @@ def log_analysis_results(target, analysis_results, console_dump):
                 print(no_results)
         else:
             for result in analysis_results:
-                log_file.write(f"{result}\n")
+                line = long_describe_message(result, analysis_options)
+                if line is None:
+                    continue
+                log_file.write(f"{remove_ansi(line)}\n")
                 if console_dump:
-                    print(result)
+                    print(line)
 
     print(f"Analysis results logged to: {log_path}")
