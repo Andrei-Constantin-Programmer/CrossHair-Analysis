@@ -229,7 +229,7 @@ def egypt_graham_jewett(x, y):
     # changing the reciprocated sum until all elements are unique.
 
     while len(l) != len(set(l)):
-        assert sum(Rational(1, d) for d in l) == Rational(x, y), "Loop invariant: sum(1/d for d in l) == x/y and all denominators are positive"
+        assert sum(Rational(1, d) for d in l) == Rational(x, y), "Loop invariant: sum(1/d for d in l) == x/y"
         l.sort()  # so the list has duplicates. find a smallest pair
         for i in range(len(l) - 1):
             if l[i] == l[i + 1]:

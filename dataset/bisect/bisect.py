@@ -28,7 +28,7 @@ from typing import List, Optional, Any, Callable
                   "Elements in a[result:] must be > x")
 @icontract.ensure(lambda OLD, result, a: OLD.lo_start <= result <= OLD.hi_start, 
                   "Result index must be within valid bounds")
-def bisect_right(a: List[int], x: int, lo: int = 0, hi: Optional[int] = None, *, key: Optional[Callable[[Any], Any]] = None):
+def bisect_right(a: List[int], x: int, lo: int = 0, hi: Optional[int] = None, *, key: Optional[Callable[[int], int]] = None):
     """
     Find the index to insert `x` into a sorted list `a` while maintaining order.
 
