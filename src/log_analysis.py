@@ -6,7 +6,7 @@ from crosshair.main import long_describe_message
 ROOT_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "../"))
 LOGS_PATH = os.path.join(ROOT_PATH, "logs")
 
-def remove_ansi(text):
+def _remove_ansi(text):
     ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
     return ansi_escape.sub('', text)
 
@@ -33,7 +33,7 @@ def log_analysis_results(target, analysis_results, analysis_options, console_dum
                 line = long_describe_message(result, analysis_options)
                 if line is None:
                     continue
-                log_file.write(f"{remove_ansi(line)}\n")
+                log_file.write(f"{_remove_ansi(line)}\n")
                 if console_dump:
                     print(line)
 

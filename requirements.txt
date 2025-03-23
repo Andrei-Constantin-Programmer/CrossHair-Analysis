@@ -1,3 +1,4 @@
 crosshair-tool
 icontract
 argparse
+sympy
