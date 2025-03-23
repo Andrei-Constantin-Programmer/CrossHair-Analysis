@@ -9,34 +9,25 @@ import icontract
 
 from math import gcd
 
+class EgyptianAlgorithm(Enum):
+    GREEDY = 1
+    GRAHAM_JEWETT = 2
+    TAKENOUCHI = 3
+    GOLOMB = 4
+
 def crosshair_ignore(func):
     func.__crosshair_ignore__ = True
     return func
 
-# @icontract.require(
-#     lambda r: isinstance(r, (Rational, Tuple, tuple)),
-#     "Input must be a rational number of a tuple of two integers"
-# )
-# @icontract.require(
-#     lambda r: not isinstance(r, (Tuple, tuple)) or len(r) == 2,
-#     "Tuple input must have exactly two elements"
-# )
-# @icontract.require(
-#     lambda r: r > 0,
-#     "The input rational number must be strictly positive"
-# )
+
 @icontract.require(
     lambda numerator, denominator: numerator > 0 and denominator > 0,
     "The input rational number must be strictly positive"
 )
 @icontract.require(
     lambda numerator, denominator: numerator <= 10 and denominator <= 10,
-    "Numerator must be ≤ 100 and denominator ≤ 1000 to prevent excessive computation"
+    "Numerator must be ≤ 10 and denominator ≤ 10 to prevent excessive computation"
 )
-# @icontract.require(
-#     lambda algorithm: algorithm in {"Greedy", "Graham Jewett", "Takenouchi", "Golomb"},
-#     "Invalid algorithm choice"
-# )
 @icontract.ensure(
     lambda result, numerator, denominator: sum(Rational(1, d) for d in result) == Rational(numerator, denominator),
     "The sum of the reciprocals of the returned denominators must equal the input rational number"
@@ -45,16 +36,7 @@ def crosshair_ignore(func):
     lambda result: all(isinstance(d, Integer) and d > 0 for d in result),
     "All denominators must be positive integers"
 )
-# @icontract.ensure(
-#     lambda result, r, _: sum(Rational(1, d) for d in result) ==
-#         (r if isinstance(r, Rational) else Rational(*r)),
-#     "The sum of the reciprocals of the returned denominators must equal the input rational number"
-# )
-# @icontract.ensure(
-#     lambda result, _, __: all(isinstance(d, Integer) and d > 0 for d in result),
-#     "All denominators must be positive integers"
-# )
-def egyptian_fraction(numerator: int, denominator: int):
+def egyptian_fraction(numerator: int, denominator: int, algorithm: EgyptianAlgorithm = EgyptianAlgorithm.GREEDY):
     """
     Return the list of denominators of an Egyptian fraction
     expansion [1]_ of the said rational `r`.
@@ -151,7 +133,6 @@ def egyptian_fraction(numerator: int, denominator: int):
     .. [4] https://web.archive.org/web/20180413004012/https://ami.ektf.hu/uploads/papers/finalpdf/AMI_42_from129to134.pdf
 
     """
-    algorithm = "Greedy"
     r = Rational(numerator, denominator)
 
     # Common cases that all methods agree on
@@ -167,13 +148,13 @@ def egyptian_fraction(numerator: int, denominator: int):
     # Work in Python ints
     x, y = rem.p, rem.q
 
-    if algorithm == "Greedy":
+    if algorithm == EgyptianAlgorithm.GREEDY:
         postfix = egypt_greedy(x, y)
-    elif algorithm == "Graham Jewett":
+    elif algorithm == EgyptianAlgorithm.GRAHAM_JEWETT:
         postfix = egypt_graham_jewett(x, y)
-    elif algorithm == "Takenouchi":
+    elif algorithm == EgyptianAlgorithm.TAKENOUCHI:
         postfix = egypt_takenouchi(x, y)
-    elif algorithm == "Golomb":
+    elif algorithm == EgyptianAlgorithm.GOLOMB:
         postfix = egypt_golomb(x, y)
     return prefix + [Integer(i) for i in postfix]
 
@@ -351,7 +332,6 @@ def egypt_harmonic(r):
     d = S.One
     acc = S.Zero
     while acc + 1/d <= r:
-        assert acc == sum(Rational(1, d_val) for d_val in rv), "Loop invariant: accumulated sum 'acc' is the sum of the reciprocals for 'rv'"
         acc += 1/d
         rv.append(d)
         d += 1
