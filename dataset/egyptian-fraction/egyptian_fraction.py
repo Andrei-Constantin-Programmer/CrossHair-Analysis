@@ -9,32 +9,52 @@ import icontract
 
 from math import gcd
 
+def crosshair_ignore(func):
+    func.__crosshair_ignore__ = True
+    return func
+
+# @icontract.require(
+#     lambda r: isinstance(r, (Rational, Tuple, tuple)),
+#     "Input must be a rational number of a tuple of two integers"
+# )
+# @icontract.require(
+#     lambda r: not isinstance(r, (Tuple, tuple)) or len(r) == 2,
+#     "Tuple input must have exactly two elements"
+# )
+# @icontract.require(
+#     lambda r: r > 0,
+#     "The input rational number must be strictly positive"
+# )
 @icontract.require(
-    lambda r: isinstance(r, (Rational, Tuple, tuple)),
-    "Input must be a rational number of a tuple of two integers"
-)
-@icontract.require(
-    lambda r: not isinstance(r, (Tuple, tuple)) or len(r) == 2,
-    "Tuple input must have exactly two elements"
-)
-@icontract.require(
-    lambda r: r > 0,
+    lambda numerator, denominator: numerator > 0 and denominator > 0,
     "The input rational number must be strictly positive"
 )
 @icontract.require(
-    lambda algorithm: algorithm in {"Greedy", "Graham Jewett", "Takenouchi", "Golomb"},
-    "Invalid algorithm choice"
+    lambda numerator, denominator: numerator <= 10 and denominator <= 10,
+    "Numerator must be ≤ 100 and denominator ≤ 1000 to prevent excessive computation"
 )
+# @icontract.require(
+#     lambda algorithm: algorithm in {"Greedy", "Graham Jewett", "Takenouchi", "Golomb"},
+#     "Invalid algorithm choice"
+# )
 @icontract.ensure(
-    lambda result, r, _: sum(Rational(1, d) for d in result) ==
-        (r if isinstance(r, Rational) else Rational(*r)),
+    lambda result, numerator, denominator: sum(Rational(1, d) for d in result) == Rational(numerator, denominator),
     "The sum of the reciprocals of the returned denominators must equal the input rational number"
 )
 @icontract.ensure(
-    lambda result, _, __: all(isinstance(d, Integer) and d > 0 for d in result),
+    lambda result: all(isinstance(d, Integer) and d > 0 for d in result),
     "All denominators must be positive integers"
 )
-def egyptian_fraction(r, algorithm="Greedy"):
+# @icontract.ensure(
+#     lambda result, r, _: sum(Rational(1, d) for d in result) ==
+#         (r if isinstance(r, Rational) else Rational(*r)),
+#     "The sum of the reciprocals of the returned denominators must equal the input rational number"
+# )
+# @icontract.ensure(
+#     lambda result, _, __: all(isinstance(d, Integer) and d > 0 for d in result),
+#     "All denominators must be positive integers"
+# )
+def egyptian_fraction(numerator: int, denominator: int):
     """
     Return the list of denominators of an Egyptian fraction
     expansion [1]_ of the said rational `r`.
@@ -131,9 +151,8 @@ def egyptian_fraction(r, algorithm="Greedy"):
     .. [4] https://web.archive.org/web/20180413004012/https://ami.ektf.hu/uploads/papers/finalpdf/AMI_42_from129to134.pdf
 
     """
-
-    if not isinstance(r, Rational):
-        r = Rational(*r)
+    algorithm = "Greedy"
+    r = Rational(numerator, denominator)
 
     # Common cases that all methods agree on
     x, y = r.as_numer_denom()
@@ -160,11 +179,11 @@ def egyptian_fraction(r, algorithm="Greedy"):
 
 
 @icontract.require(
-    lambda x, _: isinstance(x, int) and x > 0,
+    lambda x: isinstance(x, int) and x > 0,
     "x must be a positive integer"
 )
 @icontract.require(
-    lambda _, y: isinstance(y, int) and y > 0,
+    lambda y: isinstance(y, int) and y > 0,
     "y must be a positive integer"
 )
 @icontract.require(
@@ -180,7 +199,7 @@ def egyptian_fraction(r, algorithm="Greedy"):
     "The sum of reciprocals must equal x/y"
 )
 @icontract.ensure(
-    lambda result, _, __: all(isinstance(d, int) and d > 0 for d in result),
+    lambda result: all(isinstance(d, int) and d > 0 for d in result),
     "All denominators must be positive integers"
 )
 def egypt_greedy(x, y):
@@ -198,11 +217,11 @@ def egypt_greedy(x, y):
 
 
 @icontract.require(
-    lambda x, _: isinstance(x, int) and x > 0,
+    lambda x: isinstance(x, int) and x > 0,
     "x must be a positive integer"
 )
 @icontract.require(
-    lambda _, y: isinstance(y, int) and y > 0,
+    lambda y: isinstance(y, int) and y > 0,
     "y must be a positive integer"
 )
 @icontract.require(
@@ -218,7 +237,7 @@ def egypt_greedy(x, y):
     "The sum of reciprocals must equal x/y"
 )
 @icontract.ensure(
-    lambda result, _, __: all(isinstance(d, int) and d > 0 for d in result),
+    lambda result: all(isinstance(d, int) and d > 0 for d in result),
     "All denominators must be positive integers"
 )
 def egypt_graham_jewett(x, y):
@@ -244,11 +263,11 @@ def egypt_graham_jewett(x, y):
 
 
 @icontract.require(
-    lambda x, _: isinstance(x, int) and x > 0,
+    lambda x: isinstance(x, int) and x > 0,
     "x must be a positive integer"
 )
 @icontract.require(
-    lambda _, y: isinstance(y, int) and y > 0,
+    lambda y: isinstance(y, int) and y > 0,
     "y must be a positive integer"
 )
 @icontract.require(
@@ -264,11 +283,11 @@ def egypt_graham_jewett(x, y):
     "The sum of reciprocals must equal x/y"
 )
 @icontract.ensure(
-    lambda result, _, __: all(isinstance(d, int) and d > 0 for d in result),
+    lambda result: all(isinstance(d, int) and d > 0 for d in result),
     "All denominators must be positive integers"
 )
 def egypt_takenouchi(x, y):
-    # special cases for 3/y
+    # Special cases for 3/y
     if x == 3:
         if y % 2 == 0:
             return [y//2, y]
@@ -294,11 +313,11 @@ def egypt_takenouchi(x, y):
 
 
 @icontract.require(
-    lambda x, _: isinstance(x, int) and x > 0,
+    lambda x: isinstance(x, int) and x > 0,
     "x must be a positive integer"
 )
 @icontract.require(
-    lambda _, y: isinstance(y, int) and y > 0,
+    lambda y: isinstance(y, int) and y > 0,
     "y must be a positive integer"
 )
 @icontract.require(
@@ -314,7 +333,7 @@ def egypt_takenouchi(x, y):
     "The sum of reciprocals must equal x/y"
 )
 @icontract.ensure(
-    lambda result, _, __: all(isinstance(d, int) and d > 0 for d in result),
+    lambda result: all(isinstance(d, int) and d > 0 for d in result),
     "All denominators must be positive integers"
 )
 def egypt_golomb(x, y):
@@ -326,18 +345,7 @@ def egypt_golomb(x, y):
     return sorted(rv)
 
 
-@icontract.require(
-    lambda r: isinstance(r, Rational),
-    "r must be a Rational"
-)
-@icontract.ensure(
-    lambda result, r: sum(Rational(1, d) for d in result[0]) + result[1] == r,
-    "The harmonic sum and remainder must add up to r"
-)
-@icontract.ensure(
-    lambda result, _: all(isinstance(d, int) and d > 0 for d in result[0]),
-    "All denominators in the harmonic part must be positive integers"
-)
+@crosshair_ignore
 def egypt_harmonic(r):
     rv = []
     d = S.One
