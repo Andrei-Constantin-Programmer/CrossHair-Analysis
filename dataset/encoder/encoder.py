@@ -125,9 +125,13 @@ class Encoder:
             r"""'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
         )
 
+    @icontract.require(
+        lambda token: len(token) >= 1,
+        "Token must be a non-empty string."
+    )
     @icontract.ensure(
         lambda token, result: len(token) >= 2 or (len(token) == 1 and (result == token)),
-        "If token has fewer than 2 characters, BPE returns it unchanged."
+        "If token has exactly 1 character, BPE returns it unchanged."
     )
     @icontract.ensure(
         lambda result: result, 
@@ -150,6 +154,7 @@ class Encoder:
         - token must be a non-empty string.
 
         Postconditions:
+        - If the token is one character long, it should be returned unchanged.
         - The result is a non-empty string.
         """
         if token in self.cache:
