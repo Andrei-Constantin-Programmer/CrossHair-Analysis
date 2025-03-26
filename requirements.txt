@@ -3,3 +3,4 @@ icontract
 argparse
 sympy
 regex
+django

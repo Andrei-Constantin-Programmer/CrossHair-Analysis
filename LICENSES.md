@@ -5,6 +5,7 @@ This document provides licensing details for the open-source software samples us
 - The **source repository** where the code was obtained.
 - The **license type** under which it is distributed.
 - A link to the original license file (if applicable).
+- Notes about the portion of the code being used.
 
 ---
 
@@ -23,9 +24,16 @@ This document provides licensing details for the open-source software samples us
 ---
 
 ## **3. Encoder (GPT-2)**
-- **Source:** [OpenAI/gpt-2](https://github.com/openai/gpt-2)
+- **Source:** [OpenAI/gpt-2](https://github.com/encode/django-rest-framework)
 - **License:** [MIT License](https://github.com/openai/gpt-2/blob/master/LICENSE)
 - **Notes:** This class is part of OpenAI’s GPT-2 repository. It implements byte-pair encoding (BPE), which encodes text into tokenised subwords for use in transformer-based language models.
+
+---
+
+## **4. HTTP Request (Django REST Framework)**
+- **Source:** [encode/Django REST Framework](https://github.com/openai/gpt-2)
+- **License:** [License](https://github.com/encode/django-rest-framework/blob/master/LICENSE.md)
+- **Notes:** The `Request` class wraps Django’s `HttpRequest`, adding content parsing, method overriding, and authentication support for web APIs. It is central to the request/response cycle in Django REST Framework. Additionally, the `exceptions.py` and `settings.py` script files were copied over, as they are required by `request.py`.
 
 ---
 
