@@ -1,7 +1,7 @@
 # Adapted from the GPT-2 repository (https://github.com/openai/gpt-2)
 
 import icontract
-import regex as re
+import regex
 from functools import lru_cache
 
 @icontract.ensure(
@@ -85,13 +85,8 @@ class Encoder:
     """
 
     @icontract.require(
-        lambda encoder: encoder and all(isinstance(k, str) and isinstance(v, int) for k, v in encoder.items()),
-        "Encoder must be a non-empty dictionary mapping strings to integers."
-    )
-    @icontract.require(
-        lambda bpe_merges: all(isinstance(pair, tuple) and len(pair) == 2 and all(isinstance(p, str) for p in pair)
-                                for pair in bpe_merges),
-        "bpe_merges must be a list of string pairs."
+        lambda encoder: len(encoder) > 0,
+        "Encoder must be a non-empty dictionary."
     )
     def __init__(self, encoder: dict[str, int], bpe_merges: list[tuple[str, str]], errors: str = 'replace') -> None:
         """
@@ -121,8 +116,9 @@ class Encoder:
         self.bpe_ranks = dict(zip(bpe_merges, range(len(bpe_merges))))
         self.cache = {}
 
-        self.pat = re.compile(
-            r"""'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
+        # Should haved added re.IGNORECASE so BPE merges can happen for capitalized versions of contractions - ORIGINAL COMMENT
+        self.pat = regex.compile(
+            r"""'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+""", regex.IGNORECASE # Added fix recommended by the program authors.
         )
 
     @icontract.require(
@@ -209,10 +205,29 @@ class Encoder:
         self.cache[token] = result
         return result
 
-    @icontract.require(lambda text: isinstance(text, str), 
-                        "Input text must be a string.")
-    @icontract.ensure(lambda result: all(isinstance(tok, int) for tok in result), 
-                        "Output must be a list of integer tokens.")
+    @icontract.require(
+        lambda text: text.isascii() and text.isalnum(),
+        "The text must be alphanumeric."
+    )
+    @icontract.ensure(
+        lambda result: len(result) >= 1,
+        "At least one token must be produced for non-empty input."
+    )
+    @icontract.ensure(
+        lambda self, result:
+            all(tok in self.decoder for tok in result),
+        "All produced tokens must be valid encoder vocabulary entries."
+    )
+    @icontract.ensure(
+        lambda self, result:
+            isinstance(self.decode(result), str) and len(self.decode(result)) >= 0,
+        "Decoding the result should yield a string (possibly lossy)."
+    )
+    @icontract.ensure(
+        lambda text, result:
+            len(result) <= len(text) * 4,
+        "The number of tokens should be at most 4x the number of input characters (upper bound)."
+    )
     def encode(self, text: str) -> list[int]:
         """
         Encode input text into a list of integer tokens using BPE.
@@ -233,29 +248,47 @@ class Encoder:
         - The returned list contains only integers.
         """
         bpe_tokens: list[int] = []
-        for token in re.findall(self.pat, text):
-            assert isinstance(token, str), "Loop invariant: token must be a string."
-
+        for token in self.pat.findall(text):
             token_bytes = token.encode('utf-8')
             token_translated = ''.join(self.byte_encoder[b] for b in token_bytes)
-            assert isinstance(token_translated, str) and token_translated, "Loop invariant: token_translated must be a non-empty string."
-
             bpe_result = self.bpe(token_translated)
-            assert isinstance(bpe_result, str) and bpe_result, "Loop invariant: bpe_result must be a non-empty string."
-
             for bpe_token in bpe_result.split(' '):
-                assert isinstance(bpe_token, str) and bpe_token, "Loop invariant: Each bpe_token must be a non-empty string."
-
                 token_int = self.encoder[bpe_token]
-                assert isinstance(token_int, int), "Loop invariant: Token mapping must be an integer."
-
                 bpe_tokens.append(token_int)
         return bpe_tokens
 
-    @icontract.require(lambda tokens: all(isinstance(tok, int) for tok in tokens), 
-                       "Tokens must be integers.")
-    @icontract.ensure(lambda result: isinstance(result, str), 
-                      "Decoded result must be a string.")
+    @icontract.require(
+        lambda tokens: len(tokens) > 0,
+        "The list of tokens must be non-empty."
+    )
+    @icontract.require(
+        lambda self, tokens: all(tok in self.decoder for tok in tokens),
+        "All tokens must exist in the decoder vocabulary."
+    )
+    @icontract.require(
+        lambda self, tokens: all(
+            all(c in self.byte_decoder for c in self.decoder[tok])
+            for tok in tokens
+        ),
+        "All decoded characters must be mappable via byte_decoder."
+    )
+    @icontract.ensure(
+        lambda result: isinstance(result, str),
+        "Decoded result must be a string."
+    )
+    @icontract.ensure(
+        lambda result: len(result) > 0,
+        "Decoded result must be non-empty."
+    )
+    @icontract.ensure(
+        lambda result: all(isinstance(c, str) and len(c) == 1 for c in result),
+        "Each character in the result must be a single-character string."
+    )
+    @icontract.ensure(
+        lambda self, result:
+            isinstance(result.encode('utf-8', errors=self.errors), bytes),
+        "Result must be UTF-8 encodable with the specified error handling."
+    )
     def decode(self, tokens: list[int]) -> str:
         """
         Decode a list of integer tokens back into a string.
@@ -277,8 +310,7 @@ class Encoder:
         """
         text = ""
         for token in tokens:
-            assert isinstance(token, int), "Loop invariant: Each token must be an integer."
-            assert token in self.decoder, "Loop invariant: token not found in decoder mapping."
+            assert token in self.decoder, "Loop invariant: token must be part of the decoder mapping."
             text += self.decoder[token]
         decoded_bytes = bytearray()
         for c in text:

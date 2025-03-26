@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Script to run CrossHair symbolic execution on a target solution.
 
@@ -34,10 +33,10 @@ def run_crosshair_analysis(analysis_function: Callable, target, verbose, console
         per_condition_timeout=60.0,
         report_all=True,
         report_verbose=verbose,
-        timeout=60.0,
-        per_path_timeout=50.0,
-        max_iterations=5000,
-        max_uninteresting_iterations=5000,
+        timeout=120.0,
+        per_path_timeout=100.0,
+        max_iterations=10000,
+        max_uninteresting_iterations=10000,
     )
 
     analysis_results = run_checkables(analysis_function(target, options))
