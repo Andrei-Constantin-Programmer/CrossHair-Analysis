@@ -4,16 +4,20 @@ import icontract
 import regex as re
 from functools import lru_cache
 
+@icontract.ensure(
+    lambda result: len(result) == 256,
+    "The returned dictionary must map exactly 256 keys (0..255)."
+)
 @lru_cache()
-def bytes_to_unicode():
+def bytes_to_unicode() -> dict[int, str]:
     """
-    Returns list of utf-8 byte and a corresponding list of unicode strings.
-    The reversible bpe codes work on unicode strings.
-    This means you need a large # of unicode characters in your vocab if you want to avoid UNKs.
-    When you're at something like a 10B token dataset you end up needing around 5K for decent coverage.
-    This is a signficant percentage of your normal, say, 32K bpe vocab.
-    To avoid that, we want lookup tables between utf-8 bytes and unicode strings.
-    And avoids mapping to whitespace/control characters the bpe code barfs on.
+    Create a reversible mapping between UTF-8 bytes and Unicode strings.
+
+    Returns:
+    - dict[int, int] - A dictionary of length 256 mapping each byte 0..255 to a distinct Unicode string.
+
+    Postconditions:
+    - The resulting dictionary must map exactly 256 keys.
     """
     bs = list(range(ord("!"), ord("~")+1))+list(range(ord("¡"), ord("¬")+1))+list(range(ord("®"), ord("ÿ")+1))
     cs = bs[:]
@@ -26,10 +30,34 @@ def bytes_to_unicode():
     cs = [chr(n) for n in cs]
     return dict(zip(bs, cs))
 
-def get_pairs(word):
-    """Return set of symbol pairs in a word.
+@icontract.require(
+    lambda word: len(word) > 0,
+    "The 'word' tuple must be non-empty."
+)
+@icontract.ensure(
+    lambda word, result: len(result) <= max(0, len(word) - 1),
+    "The number of adjacent pairs cannot exceed len(word) - 1."
+)
+@icontract.ensure(
+    lambda word, result: all((word[i], word[i+1]) in result for i in range(len(word) - 1)),
+    "All adjacent pairs in 'word' must appear in the result."
+)
+def get_pairs(word: tuple[str, ...]) -> set[tuple[str, str]]:
+    """
+    Return the set of adjacent symbol pairs in 'word'.
 
-    Word is represented as tuple of symbols (symbols being variable-length strings).
+    Parameters:
+    - word (tuple[str, ...]): A non-empty tuple of strings (symbols).
+
+    Returns:
+    - set[tuple[str, str]]: A set of adjacent (prev_char, char) pairs.
+
+    Preconditions: 
+    - 'word' must be non-empty.
+
+    Postconditions:
+    - The number of adjacent pairs cannot exceed len(word) - 1
+    - All adjacent pairs in 'word' must appear in the result.
     """
     pairs = set()
     prev_char = word[0]
@@ -97,10 +125,14 @@ class Encoder:
             r"""'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+"""
         )
 
-    @icontract.require(lambda token: isinstance(token, str) and token, 
-                       "Token must be a non-empty string.")
-    @icontract.ensure(lambda result: isinstance(result, str) and result, 
-                      "Result must be a non-empty string.")
+    @icontract.ensure(
+        lambda token, result: len(token) >= 2 or (len(token) == 1 and (result == token)),
+        "If token has fewer than 2 characters, BPE returns it unchanged."
+    )
+    @icontract.ensure(
+        lambda result: result, 
+        "Result must be a non-empty string."
+    )
     def bpe(self, token: str) -> str:
         """
         Perform Byte-Pair Encoding on a token.
@@ -128,10 +160,13 @@ class Encoder:
 
         pairs = get_pairs(word)
 
+        if not pairs:
+            self.cache[token] = token
+            return token
+
         while True:
-            assert all(isinstance(ch, str) and ch for ch in word),  "Loop invariant: Each character in word must be a non-empty string."
-            assert all(isinstance(pair, tuple) and len(pair) == 2 and all(isinstance(x, str) and x for x in pair)
-                       for pair in pairs),                          "Loop invariant: Pairs must be valid 2-tuples of non-empty strings."
+            assert all(isinstance(ch, str) and ch for ch in word),                                          "Loop invariant: Each character in word must be a non-empty string."
+            assert all(len(pair) == 2 and all(isinstance(x, str) and x for x in pair) for pair in pairs),   "Loop invariant: Pairs must be valid 2-tuples of non-empty strings."
 
             bigram = min(pairs, key=lambda pair: self.bpe_ranks.get(pair, float('inf')))
             if bigram not in self.bpe_ranks:
@@ -162,7 +197,9 @@ class Encoder:
             if len(word) == 1:
                 break
             pairs = get_pairs(word)
-
+            if not pairs:
+                break
+            
         result = ' '.join(word)
         self.cache[token] = result
         return result
