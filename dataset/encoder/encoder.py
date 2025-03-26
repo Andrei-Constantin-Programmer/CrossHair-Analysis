@@ -75,6 +75,10 @@ def get_pairs(word: tuple[str, ...]) -> set[tuple[str, str]]:
     lambda self: all(isinstance(k, int) and isinstance(v, str) for k, v in self.decoder.items()),
     "Decoder dictionary must map integers back to strings."
 )
+@icontract.invariant(
+    lambda self: self.errors in {"strict", "replace", "ignore", "backslashreplace", "xmlcharrefreplace"},
+    "errors must be one of the known Python error-handling modes."
+)
 class Encoder:
     """
     An Encoder class implementing Byte-Pair Encoding (BPE) as used in GPT-2.
