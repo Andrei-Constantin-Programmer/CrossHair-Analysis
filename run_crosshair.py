@@ -3,7 +3,7 @@
 import argparse
 import sys
 from src.load_module import load_module_from_path
-from src.run_analysis import run_crosshair_analysis_function, run_crosshair_analysis_class
+from src.run_analysis import run_crosshair_analysis_function, run_crosshair_analysis_class, run_crosshair_analysis_module
 
 def parse_arguments():
     """Parse command-line arguments and return parsed options."""
@@ -12,14 +12,23 @@ def parse_arguments():
     parser.add_argument(
         "file_path", 
         type=str, 
-        help="Path to the Python file containing the function or class to analyse.")
+        help="Path to the Python file containing the function, class, or module to analyse.")
     
-    parser.add_argument(
-        "function_name", 
-        type=str, 
-        nargs="?", 
-        default=None, 
-        help="Name of the function to analyse (default: None (check class instead of specific function)).")
+    group = parser.add_mutually_exclusive_group(required=False)
+
+    group.add_argument(
+        "-function", "-func",
+        dest="function_name",
+        type=str,
+        help="Name of the function to analyse."
+    )
+
+    group.add_argument(
+        "-class",
+        dest="class_name",
+        type=str,
+        help="Name of the class to analyse."
+    )
     
     parser.add_argument(
         "--verbose", 
@@ -32,10 +41,10 @@ def parse_arguments():
         help="Print analysis results to console in addition to logging.")
     
     args = parser.parse_args()
-    return args.file_path, args.function_name, args.verbose, args.console_dump
+    return args.file_path, args.function_name, args.class_name, args.verbose, args.console_dump
 
 def main():
-    file_path, function_name, verbose, console_dump = parse_arguments()
+    file_path, function_name, class_name, verbose, console_dump = parse_arguments()
     
     try:
         module = load_module_from_path(file_path)
@@ -43,15 +52,22 @@ def main():
         print(f"Error loading module: {e}")
         sys.exit(1)
     
-    
     if function_name:
         if not hasattr(module, function_name):
             print(f"Error: The module does not contain a function named '{function_name}'.")
             sys.exit(1)
         target_function = getattr(module, function_name)
         run_crosshair_analysis_function(target_function, verbose, console_dump)
+
+    elif class_name:
+        if not hasattr(module, class_name):
+            print(f"Error: The module does not contain a class named '{class_name}'.")
+            sys.exit(1)
+        target_class = getattr(module, class_name)
+        run_crosshair_analysis_class(target_class, verbose, console_dump)
+
     else:
-        run_crosshair_analysis_class(module, verbose, console_dump)
+        run_crosshair_analysis_module(module, verbose, console_dump)
 
 if __name__ == "__main__":
     main()

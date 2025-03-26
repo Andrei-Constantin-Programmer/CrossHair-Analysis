@@ -11,14 +11,21 @@ This document provides licensing details for the open-source software samples us
 ## **1. Bisect Right (Python Standard Library)**
 - **Source:** [Python/cpython](https://github.com/python/cpython)
 - **License:** [Python Software Foundation License (PSF)](https://github.com/python/cpython/blob/main/LICENSE)
-- **Notes:** The bisect module is part of the Python standard library and follows the PSF license.
+- **Notes:** The bisect module is part of the Python standard library and follows the PSF license. It provides support for maintaining lists in sorted order without needing to explicitly sort them after insertion.
 
 ---
 
 ## **2. Egyptian Fraction (SymPy)**
 - **Source:** [SymPy/sympy](https://github.com/sympy/sympy/)
 - **License:** [BSD License](https://github.com/sympy/sympy/blob/master/LICENSE)
-- **Notes:** This function computes Egyptian fraction representations of rational numbers.
+- **Notes:** This function is part of the SymPy symbolic mathematics library. It computes Egyptian fraction representations of rational numbers, expressing fractions as sums of distinct unit fractions.
+
+---
+
+## **3. Encoder (GPT-2)**
+- **Source:** [OpenAI/gpt-2](https://github.com/openai/gpt-2)
+- **License:** [MIT License](https://github.com/openai/gpt-2/blob/master/LICENSE)
+- **Notes:** This class is part of OpenAI’s GPT-2 repository. It implements byte-pair encoding (BPE), which encodes text into tokenised subwords for use in transformer-based language models.
 
 ---
 

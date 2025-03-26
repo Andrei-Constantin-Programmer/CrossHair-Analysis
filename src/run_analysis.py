@@ -11,7 +11,7 @@ Adapted from the CPython codebase (https://github.com/python/cpython) and utiliz
 
 from src.log_analysis import log_analysis_results
 from typing import Callable
-from crosshair.core import analyze_function, analyze_class, run_checkables
+from crosshair.core import analyze_function, analyze_class, analyze_module, run_checkables
 from crosshair.options import AnalysisOptions
 from crosshair.condition_parser import AnalysisKind
 import logging
@@ -22,6 +22,9 @@ def run_crosshair_analysis_class(target, verbose, console_dump):
 
 def run_crosshair_analysis_function(target, verbose, console_dump):
     run_crosshair_analysis(analyze_function, target, verbose, console_dump)
+
+def run_crosshair_analysis_module(target, verbose, console_dump):
+    run_crosshair_analysis(analyze_module, target, verbose, console_dump)
 
 def run_crosshair_analysis(analysis_function: Callable, target, verbose, console_dump):
     options = AnalysisOptions(

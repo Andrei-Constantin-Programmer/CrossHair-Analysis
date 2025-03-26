@@ -2,3 +2,4 @@ crosshair-tool
 icontract
 argparse
 sympy
+regex
