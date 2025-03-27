@@ -4,8 +4,7 @@ class FakeSettings:
 
     This class is used in environments (e.g., during CrossHair symbolic analysis)
     where Django is not fully installed or configured. It provides only those
-    attributes that your code references. If additional settings keys are needed,
-    add them here or remove references to them in your code.
+    attributes that your code references.
     """
     REST_FRAMEWORK = {}
     DEFAULT_CHARSET = "utf-8"
