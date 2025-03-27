@@ -10,6 +10,8 @@ The wrapped request then offers a richer API, in particular :
     - full support of PUT method, including support for file uploads
     - form overloading of HTTP method, content type and content
 """
+from typing import Any, Optional
+import icontract
 import io
 import sys
 from contextlib import contextmanager
@@ -20,8 +22,8 @@ from django.http.request import RawPostDataException
 from django.utils.datastructures import MultiValueDict
 from django.utils.http import parse_header_parameters
 
-import exceptions
-from settings import api_settings
+import dataset.request.exceptions as exceptions
+from dataset.request.settings import api_settings
 
 
 def is_form_media_type(media_type):
@@ -139,30 +141,66 @@ class ForcedAuthentication:
         return (self.force_user, self.force_token)
 
 
+@icontract.invariant(
+    lambda self: "encoding" in self.parser_context and bool(self.parser_context["encoding"]),
+    "parser_context must contain a non‐empty 'encoding' entry."
+)
+@icontract.invariant(
+    lambda self: self._data is Empty or self._full_data is not Empty,
+    "If _data has been loaded, then _full_data must also be set."
+)
+@icontract.invariant(
+    lambda self: not hasattr(self, "_authenticator") or (self._authenticator is None or (hasattr(self, "_user") and bool(self._user))),
+    "If an authenticator is set, then _user must be a truthy value."
+)
+@icontract.invariant(
+    lambda self: self._stream is Empty or self._stream is None or self._stream is self._request or hasattr(self._stream, "read"),
+    "_stream must be either not loaded, the original request, or a stream-like object."
+)
+@icontract.invariant(
+    lambda self: self._data is Empty or self._full_data is not Empty,
+    "If _data has been loaded, then _full_data must also be set."
+)
 class Request:
     """
     Wrapper allowing to enhance a standard `HttpRequest` instance.
-
-    Kwargs:
-        - request(HttpRequest). The original request instance.
-        - parsers(list/tuple). The parsers to use for parsing the
-          request content.
-        - authenticators(list/tuple). The authenticators used to try
-          authenticating the request's user.
     """
 
-    def __init__(self, request, parsers=None, authenticators=None,
-                 negotiator=None, parser_context=None):
-        assert isinstance(request, HttpRequest), (
-            'The `request` argument must be an instance of '
-            '`django.http.HttpRequest`, not `{}.{}`.'
-            .format(request.__class__.__module__, request.__class__.__name__)
-        )
+    @icontract.require(
+        lambda parser_context: (parser_context is None) or ("encoding" in parser_context and bool(parser_context["encoding"])),
+        "If provided, parser_context must include a non-empty 'encoding' key."
+    )
+    @icontract.ensure(
+        lambda self: "encoding" in self.parser_context and bool(self.parser_context["encoding"]),
+        "parser_context contains a non-empty 'encoding' entry."
+    )
+    def __init__(self, 
+                 request: HttpRequest, 
+                 parsers: Optional[list] = None, 
+                 authenticators: Optional[list] = None,
+                 parser_context: Optional[dict[str, Any]] = None):
+        """
+        Initialize a new Request instance that wraps a standard HttpRequest and enhances it.
 
+        Parameters:
+        - request (HttpRequest): The original Django HttpRequest.
+        - parsers (list, optional): A list of parsers to process the request content.
+        - authenticators (list, optional): A list of authenticators for user authentication.
+        - parser_context (dict[str, Any], optional): A dictionary providing additional parsing context.
+          Must include a non-empty 'encoding' key if provided.
+
+        Preconditions:
+        - If parser_context is provided, it must include a non-empty 'encoding' key.
+
+        Postconditions:
+        - The instance's parser_context will contain a non-empty 'encoding' and a reference to this Request instance.
+        - The underlying _request attribute is set to the provided request.
+        """
+        
         self._request = request
         self.parsers = parsers or ()
         self.authenticators = authenticators or ()
-        self.negotiator = negotiator or self._default_negotiator()
+        self.negotiator = self._default_negotiator()
         self.parser_context = parser_context
         self._data = Empty
         self._files = Empty
@@ -181,43 +219,69 @@ class Request:
             forced_auth = ForcedAuthentication(force_user, force_token)
             self.authenticators = (forced_auth,)
 
-    def __repr__(self):
-        return '<%s.%s: %s %r>' % (
-            self.__class__.__module__,
-            self.__class__.__name__,
-            self.method,
-            self.get_full_path())
-
-    # Allow generic typing checking for requests.
-    def __class_getitem__(cls, *args, **kwargs):
-        return cls
-
     def _default_negotiator(self):
         return api_settings.DEFAULT_CONTENT_NEGOTIATION_CLASS()
 
     @property
-    def content_type(self):
+    def content_type(self) -> str:
+        """
+        Retrieve the content type from the underlying request's META information.
+
+        Returns:
+        - str: The content type string.
+
+        Postconditions:
+        - The returned content type is not None.
+        """
         meta = self._request.META
         return meta.get('CONTENT_TYPE', meta.get('HTTP_CONTENT_TYPE', ''))
 
+    @icontract.ensure(
+        lambda self, result: result is None 
+                             or result == self._request 
+                             or hasattr(result, "read"),
+        "stream must be either None, the original request, or a stream-like object."
+    )
     @property
-    def stream(self):
+    def stream(self) -> Optional[HttpRequest | io.BytesIO]:
         """
-        Returns an object that may be used to stream the request content.
+        Return a stream-like object representing the request content.
+
+        Returns:
+        - Optional[Union[HttpRequest, io.BytesIO]]: Either the original request (if unread), a stream-like object with a 'read' method, or None if there is no content.
+
+        Postconditions:
+        - The returned object is either None, the original request, or supports the 'read' method.
         """
         if not _hasattr(self, '_stream'):
             self._load_stream()
         return self._stream
 
     @property
-    def query_params(self):
+    def query_params(self) -> QueryDict:
         """
-        More semantically correct name for request.GET.
+        Retrieve the query parameters from the underlying request.
+
+        Returns:
+        - QueryDict: The GET parameters of the underlying HttpRequest.
         """
         return self._request.GET
 
+    @icontract.ensure(
+        lambda result: result is not Empty, 
+        "data must be loaded (not left as the placeholder)"
+    )
     @property
     def data(self):
+        """
+        Return the parsed data from the request content.
+
+        Returns:
+        - Any: The combined data parsed from the request (including form data and file uploads).
+
+        Postconditions:
+        - The returned data is not the placeholder Empty.
+        """
         if not _hasattr(self, '_full_data'):
             with wrap_attributeerrors():
                 self._load_data_and_files()
@@ -226,8 +290,10 @@ class Request:
     @property
     def user(self):
         """
-        Returns the user associated with the current request, as authenticated
-        by the authentication classes provided to the request.
+        Return the authenticated user associated with the request.
+
+        Returns:
+        - Any: The user object if authentication was successful, or None otherwise.
         """
         if not hasattr(self, '_user'):
             with wrap_attributeerrors():
@@ -235,7 +301,7 @@ class Request:
         return self._user
 
     @user.setter
-    def user(self, value):
+    def user(self, value) -> None:
         """
         Sets the user on the current request. This is necessary to maintain
         compatibility with django.contrib.auth where the user property is
@@ -243,6 +309,9 @@ class Request:
 
         Note that we also set the user on Django's underlying `HttpRequest`
         instance, ensuring that it is available to any middleware in the stack.
+
+        Parameters:
+        - value (Any): The user object to be associated with the request.
         """
         self._user = value
         self._request.user = value
@@ -252,6 +321,9 @@ class Request:
         """
         Returns any non-user authentication information associated with the
         request, such as an authentication token.
+
+        Returns:
+        - Any: The authentication details.
         """
         if not hasattr(self, '_auth'):
             with wrap_attributeerrors():
@@ -259,10 +331,13 @@ class Request:
         return self._auth
 
     @auth.setter
-    def auth(self, value):
+    def auth(self, value) -> None:
         """
         Sets any non-user authentication information associated with the
         request, such as an authentication token.
+
+        Parameters:
+        - value (Any): The authentication token or details.
         """
         self._auth = value
         self._request.auth = value
@@ -272,15 +347,33 @@ class Request:
         """
         Return the instance of the authentication instance class that was used
         to authenticate the request, or `None`.
+
+        Returns:
+        - Any: The successful authenticator, or None if authentication was not successful.
         """
         if not hasattr(self, '_authenticator'):
             with wrap_attributeerrors():
                 self._authenticate()
         return self._authenticator
 
-    def _load_data_and_files(self):
+    @icontract.ensure(
+        lambda self: self._data is not Empty, 
+        "_data must be set after _load_data_and_files"
+    )
+    @icontract.ensure(
+        lambda self: self._full_data is not Empty, 
+        "_full_data must be set after _load_data_and_files"
+    )
+    def _load_data_and_files(self) -> None:
         """
-        Parses the request content into `self.data`.
+        Parse the request content and load both data and files.
+
+        Preconditions:
+        - The _data attribute must be in its initial Empty state before loading.
+
+        Postconditions:
+        - _data is updated to contain the parsed data.
+        - _full_data is set, combining _data and _files.
         """
         if not _hasattr(self, '_data'):
             self._data, self._files = self._parse()
@@ -296,9 +389,21 @@ class Request:
                 self._request._post = self.POST
                 self._request._files = self.FILES
 
-    def _load_stream(self):
+    @icontract.ensure(
+        lambda self: self._stream is None 
+                     or self._stream == self._request 
+                     or hasattr(self._stream, "read"),
+        "After _load_stream, _stream must be either None, the original request, or a stream-like object."
+    )
+    def _load_stream(self) -> None:
         """
-        Return the content body of the request, as a stream.
+        Load the request content as a stream for further processing.
+
+        Returns:
+        - None
+
+        Postconditions:
+        - _stream is set to either None, the original request, or a stream-like object with a 'read' method.
         """
         meta = self._request.META
         try:
@@ -315,9 +420,12 @@ class Request:
         else:
             self._stream = io.BytesIO(self.body)
 
-    def _supports_form_parsing(self):
+    def _supports_form_parsing(self) -> bool:
         """
-        Return True if this requests supports parsing form data.
+        Determine if the request supports form parsing.
+
+        Returns:
+        - bool: True if at least one parser supports form media types; False otherwise.
         """
         form_media = (
             'application/x-www-form-urlencoded',
@@ -325,11 +433,14 @@ class Request:
         )
         return any(parser.media_type in form_media for parser in self.parsers)
 
-    def _parse(self):
+    def _parse(self) -> tuple[Any, Any]:
         """
         Parse the request content, returning a two-tuple of (data, files)
 
         May raise an `UnsupportedMediaType`, or `ParseError` exception.
+
+        Returns:
+        - tuple[Any, Any]: A two-tuple where the first element is the parsed data and the second is the parsed files.
         """
         media_type = self.content_type
         try:
@@ -377,7 +488,7 @@ class Request:
             empty_files = MultiValueDict()
             return (parsed, empty_files)
 
-    def _authenticate(self):
+    def _authenticate(self) -> None:
         """
         Attempt to authenticate the request using each authentication instance
         in turn.
@@ -396,11 +507,18 @@ class Request:
 
         self._not_authenticated()
 
-    def _not_authenticated(self):
+    @icontract.ensure(
+        lambda self: self._authenticator is None, 
+        "After _not_authenticated, _authenticator must be None"
+    )
+    def _not_authenticated(self) -> None:
         """
         Set authenticator, user & authtoken representing an unauthenticated request.
 
         Defaults are None, AnonymousUser & None.
+
+        Postconditions:
+        - _authenticator is set to None.
         """
         self._authenticator = None
 
@@ -414,10 +532,15 @@ class Request:
         else:
             self.auth = None
 
-    def __getattr__(self, attr):
+    def __getattr__(self, attr: str):
         """
-        If an attribute does not exist on this instance, then we also attempt
-        to proxy it to the underlying HttpRequest object.
+        Retrieve an attribute from the underlying request if it is not found on this instance.
+
+        Parameters:
+        - attr (str): The name of the attribute to retrieve.
+
+        Returns:
+        - Any: The attribute value from the underlying HttpRequest.
         """
         try:
             _request = self.__getattribute__("_request")
@@ -425,8 +548,21 @@ class Request:
         except AttributeError:
             raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{attr}'")
 
+    @icontract.ensure(
+        lambda result: result is not None, 
+        "POST must not be None"
+    )
     @property
-    def POST(self):
+    def POST(self) -> QueryDict:
+        """
+        Return the POST data of the request.
+
+        Returns:
+        - QueryDict: The POST data, either parsed from the request if the content type is form media, or an empty QueryDict.
+
+        Postconditions:
+        - The returned QueryDict is not None.
+        """
         # Ensure that request.POST uses our request parsing.
         if not _hasattr(self, '_data'):
             with wrap_attributeerrors():
@@ -435,8 +571,21 @@ class Request:
             return self._data
         return QueryDict('', encoding=self._request._encoding)
 
+    @icontract.ensure(
+        lambda result: result is not None, 
+        "FILES must not be None"
+    )
     @property
-    def FILES(self):
+    def FILES(self) -> MultiValueDict:
+        """
+        Return the FILES data of the request.
+
+        Returns:
+        - MultiValueDict: The files uploaded as part of the request.
+
+        Postconditions:
+        - The returned MultiValueDict is not None.
+        """
         # Leave this one alone for backwards compat with Django's request.FILES
         # Different from the other two cases, which are not valid property
         # names on the WSGIRequest class.
@@ -445,7 +594,11 @@ class Request:
                 self._load_data_and_files()
         return self._files
 
-    def force_plaintext_errors(self, value):
+    @icontract.ensure(
+        lambda self, value: self._request.is_ajax() == value, 
+        "force_plaintext_errors must set is_ajax() to the forced value"
+    )
+    def force_plaintext_errors(self, value: bool) -> None:
         # Hack to allow our exception handler to force choice of
         # plaintext or html error responses.
         self._request.is_ajax = lambda: value

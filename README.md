@@ -8,7 +8,7 @@
 
 ## Installing
 
-1. Ensure **Python 3.8.x** or higher is installed.
+1. Ensure **Python 3.13.x** or higher is installed.
 
 2. Clone project
 Clone the repository locally, or download and extract the ZIP file.
