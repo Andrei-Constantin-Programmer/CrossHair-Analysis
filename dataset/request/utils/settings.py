@@ -21,7 +21,7 @@ This module provides the `api_setting` object, that is used to access
 REST framework settings, checking for user settings first, then falling
 back to the defaults.
 """
-import dataset.request.fake_settings
+import dataset.request.utils.fake_settings
 
 from django.conf import settings
 # Import from `django.core.signals` instead of the official location

@@ -16,7 +16,7 @@ import io
 import sys
 from contextlib import contextmanager
 
-import dataset.request.fake_settings
+import dataset.request.utils.fake_settings
 
 from django.conf import settings
 from django.http import HttpRequest, QueryDict
@@ -24,8 +24,8 @@ from django.http.request import RawPostDataException
 from django.utils.datastructures import MultiValueDict
 from django.utils.http import parse_header_parameters
 
-import dataset.request.exceptions as exceptions
-from dataset.request.settings import api_settings
+import dataset.request.utils.exceptions as exceptions
+from dataset.request.utils.settings import api_settings
 
 def is_form_media_type(media_type):
     """
