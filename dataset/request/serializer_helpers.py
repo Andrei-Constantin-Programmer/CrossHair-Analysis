@@ -5,6 +5,8 @@ import contextlib
 import sys
 from collections.abc import Mapping, MutableMapping
 
+import dataset.request.fake_settings
+
 from django.utils.encoding import force_str
 
 import dataset.request.json as json

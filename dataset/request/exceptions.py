@@ -9,6 +9,8 @@ In addition, Django's built in 403 and 404 exceptions are handled.
 """
 import math
 
+import dataset.request.fake_settings
+
 from django.http import JsonResponse
 from django.utils.encoding import force_str
 from django.utils.translation import gettext_lazy as _

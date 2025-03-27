@@ -6,5 +6,34 @@ class FakeSettings:
     where Django is not fully installed or configured. It provides only those
     attributes that your code references.
     """
-    REST_FRAMEWORK = {}
+    REST_FRAMEWORK = {
+        "DEFAULT_CONTENT_NEGOTIATION_CLASS": "rest_framework.negotiation.DefaultContentNegotiation",
+        'UNAUTHENTICATED_USER': lambda: None,
+        'UNAUTHENTICATED_TOKEN': lambda: None,
+    }
     DEFAULT_CHARSET = "utf-8"
+
+    configured = False
+
+    def configure(self, **options) -> None:
+        """
+        Stub method to mimic django.conf.settings.configure().
+        Setting 'configured' to True helps prevent 'ImproperlyConfigured' checks.
+        Any keyword arguments are mapped to attributes on this FakeSettings object.
+        """
+        self.configured = True
+        for key, value in options.items():
+            setattr(self, key, value)
+
+    def __getattr__(self, _: str):
+        """
+        Fallback for any settings attributes not explicitly defined.
+        Returns None if an attribute doesn't exist, which can handle
+        code that checks for 'DEBUG', etc.
+        """
+        return None
+    
+
+import django.conf
+
+django.conf.settings = FakeSettings
