@@ -16,7 +16,6 @@ import io
 import sys
 from contextlib import contextmanager
 
-from django.conf import settings
 from django.http import HttpRequest, QueryDict
 from django.http.request import RawPostDataException
 from django.utils.datastructures import MultiValueDict
@@ -24,7 +23,7 @@ from django.utils.http import parse_header_parameters
 
 import dataset.request.exceptions as exceptions
 from dataset.request.settings import api_settings
-
+from dataset.request.fake_settings import FakeSettings as settings
 
 def is_form_media_type(media_type):
     """
@@ -236,12 +235,6 @@ class Request:
         meta = self._request.META
         return meta.get('CONTENT_TYPE', meta.get('HTTP_CONTENT_TYPE', ''))
 
-    @icontract.ensure(
-        lambda self, result: result is None 
-                             or result == self._request 
-                             or hasattr(result, "read"),
-        "stream must be either None, the original request, or a stream-like object."
-    )
     @property
     def stream(self) -> Optional[HttpRequest | io.BytesIO]:
         """
@@ -249,9 +242,6 @@ class Request:
 
         Returns:
         - Optional[Union[HttpRequest, io.BytesIO]]: Either the original request (if unread), a stream-like object with a 'read' method, or None if there is no content.
-
-        Postconditions:
-        - The returned object is either None, the original request, or supports the 'read' method.
         """
         if not _hasattr(self, '_stream'):
             self._load_stream()
@@ -267,10 +257,6 @@ class Request:
         """
         return self._request.GET
 
-    @icontract.ensure(
-        lambda result: result is not Empty, 
-        "data must be loaded (not left as the placeholder)"
-    )
     @property
     def data(self):
         """
@@ -278,9 +264,6 @@ class Request:
 
         Returns:
         - Any: The combined data parsed from the request (including form data and file uploads).
-
-        Postconditions:
-        - The returned data is not the placeholder Empty.
         """
         if not _hasattr(self, '_full_data'):
             with wrap_attributeerrors():
@@ -548,10 +531,6 @@ class Request:
         except AttributeError:
             raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{attr}'")
 
-    @icontract.ensure(
-        lambda result: result is not None, 
-        "POST must not be None"
-    )
     @property
     def POST(self) -> QueryDict:
         """
@@ -559,9 +538,6 @@ class Request:
 
         Returns:
         - QueryDict: The POST data, either parsed from the request if the content type is form media, or an empty QueryDict.
-
-        Postconditions:
-        - The returned QueryDict is not None.
         """
         # Ensure that request.POST uses our request parsing.
         if not _hasattr(self, '_data'):
@@ -571,10 +547,6 @@ class Request:
             return self._data
         return QueryDict('', encoding=self._request._encoding)
 
-    @icontract.ensure(
-        lambda result: result is not None, 
-        "FILES must not be None"
-    )
     @property
     def FILES(self) -> MultiValueDict:
         """
@@ -582,9 +554,6 @@ class Request:
 
         Returns:
         - MultiValueDict: The files uploaded as part of the request.
-
-        Postconditions:
-        - The returned MultiValueDict is not None.
         """
         # Leave this one alone for backwards compat with Django's request.FILES
         # Different from the other two cases, which are not valid property
