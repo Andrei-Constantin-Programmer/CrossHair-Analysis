@@ -1,6 +1,6 @@
 # Adapted from the CPython codebase (https://github.com/python/cpython)
 import icontract
-from typing import List, Optional, Any, Callable
+from typing import List, Optional, Callable
 
 @icontract.snapshot(lambda lo: lo, name="lo_start")
 @icontract.snapshot(lambda a, hi: hi if hi is not None else len(a), name="hi_start")
