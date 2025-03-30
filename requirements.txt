@@ -1,6 +1,7 @@
 crosshair-tool
 icontract
 argparse
+mpmath
 sympy
 regex
 django

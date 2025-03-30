@@ -13,3 +13,5 @@ def report_coverage(cov: Coverage, target, open_coverage: bool):
 
     if open_coverage:
         webbrowser.open(f"file://{os.path.join(path, "index.html")}")
+        
+    cov.erase()

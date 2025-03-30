@@ -1,0 +1,18 @@
+[
+    {
+        "file": "dataset\\bisect\\bisect_program.py",
+        "function": "bisect_right"
+    },
+    {
+        "file": "dataset\\egyptian_fraction\\egyptian_fraction.py",
+        "function": "egyptian_fraction"
+    },
+    {
+        "file": "dataset\\encoder\\encoder.py",
+        "class": "Encoder"
+    },
+    {
+        "file": "dataset\\request\\request.py",
+        "function": "test_request_symbolic"
+    }
+]

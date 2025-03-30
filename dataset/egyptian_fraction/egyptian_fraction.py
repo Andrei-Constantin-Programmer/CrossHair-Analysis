@@ -1,11 +1,15 @@
 # Adapted from the SymPy repository (https://github.com/sympy/sympy)
 
+import sys
+import mpmath
+sys.modules['sympy.mpmath'] = mpmath
+
 from enum import Enum
-from sympy.core.containers import Tuple
 from sympy.core.numbers import (Integer, Rational)
 from sympy.core.singleton import S
 import sympy.polys
 import icontract
+
 
 from math import gcd
 

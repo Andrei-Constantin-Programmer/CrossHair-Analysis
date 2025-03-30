@@ -11,6 +11,7 @@ The wrapped request then offers a richer API, in particular :
     - form overloading of HTTP method, content type and content
 """
 from typing import Any, Optional
+import crosshair
 import icontract
 import io
 import sys
@@ -188,17 +189,14 @@ class Request:
         - request (HttpRequest): The original Django HttpRequest.
         - parsers (list, optional): A list of parsers to process the request content.
         - authenticators (list, optional): A list of authenticators for user authentication.
-        - parser_context (dict[str, Any], optional): A dictionary providing additional parsing context.
-          Must include a non-empty 'encoding' key if provided.
 
         Postconditions:
         - The instance's parser_context will contain a non-empty 'encoding' and a reference to this Request instance.
-        - The underlying _request attribute is set to the provided request.
         """
         
         self._request = request
-        self.parsers = parsers or ()
-        self.authenticators = authenticators or ()
+        self.parsers = () if parsers is None else parsers
+        self.authenticators = () if authenticators is None else authenticators
         self.negotiator = self._default_negotiator()
         self.parser_context = None
         self._data = Empty
@@ -568,3 +566,28 @@ class Request:
         # Hack to allow our exception handler to force choice of
         # plaintext or html error responses.
         self._request.is_ajax = lambda: value
+
+
+class FakeSymbolicHttpRequest:
+    META: dict
+    user = None
+    auth = None
+    _read_started = False
+    encoding = "utf-8"
+    method = "GET"
+    content_type = "application/json"
+    body = b'{"key":"value"}'
+
+    def __init__(self):
+        self._read_started = False
+        self.encoding = "utf-8"
+        self.method = "GET"
+        self.content_type = "application/json"
+        self.body = b'{"key":"value"}'
+        self.META = {}
+
+def symbolic_request(factory: crosshair.SymbolicFactory) -> Request:
+    req = FakeSymbolicHttpRequest()
+    return Request(req, factory(list), factory(list))
+
+crosshair.register_type(Request, symbolic_request)

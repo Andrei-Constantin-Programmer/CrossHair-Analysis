@@ -1,3 +1,5 @@
+import django.conf
+
 class FakeSettings:
     """
     A minimal stand-in for django.conf.settings to avoid ImproperlyConfigured errors.
@@ -7,7 +9,7 @@ class FakeSettings:
     attributes that your code references.
     """
     REST_FRAMEWORK = {
-        "DEFAULT_CONTENT_NEGOTIATION_CLASS": "rest_framework.negotiation.DefaultContentNegotiation",
+        "DEFAULT_CONTENT_NEGOTIATION_CLASS": "dataset.request.utils.negotiation.DefaultContentNegotiation",
         'UNAUTHENTICATED_USER': lambda: None,
         'UNAUTHENTICATED_TOKEN': lambda: None,
     }
@@ -32,8 +34,5 @@ class FakeSettings:
         code that checks for 'DEBUG', etc.
         """
         return None
-    
-
-import django.conf
 
 django.conf.settings = FakeSettings
