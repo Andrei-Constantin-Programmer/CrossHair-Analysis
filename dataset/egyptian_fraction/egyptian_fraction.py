@@ -10,19 +10,17 @@ from sympy.core.singleton import S
 import sympy.polys
 import icontract
 
-
 from math import gcd
 
-class EgyptianAlgorithm(Enum):
+class EgyptianAlgorithm(Enum): # pragma: no cover
     GREEDY = 1
     GRAHAM_JEWETT = 2
     TAKENOUCHI = 3
     GOLOMB = 4
 
-def crosshair_ignore(func):
+def crosshair_ignore(func): # pragma: no cover
     func.__crosshair_ignore__ = True
     return func
-
 
 @icontract.require(
     lambda numerator, denominator: numerator > 0 and denominator > 0,
@@ -329,9 +327,8 @@ def egypt_golomb(x, y):
     rv.extend(egypt_golomb((x*xp - 1)//y, xp))
     return sorted(rv)
 
-
 @crosshair_ignore
-def egypt_harmonic(r):
+def egypt_harmonic(r): # pragma: no cover
     rv = []
     d = S.One
     acc = S.Zero

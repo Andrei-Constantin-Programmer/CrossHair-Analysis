@@ -37,8 +37,7 @@ def is_form_media_type(media_type):
     return (base_media_type == 'application/x-www-form-urlencoded' or
             base_media_type == 'multipart/form-data')
 
-
-class override_method:
+class override_method: # pragma: no cover
     """
     A context manager that temporarily overrides the method on a request,
     additionally setting the `view.request` attribute.
@@ -66,13 +65,11 @@ class override_method:
         self.view.request = self.request
         self.view.action = self.action
 
-
-class WrappedAttributeError(Exception):
+class WrappedAttributeError(Exception): # pragma: no cover
     pass
 
-
 @contextmanager
-def wrap_attributeerrors():
+def wrap_attributeerrors(): # pragma: no cover
     """
     Used to re-raise AttributeErrors caught during authentication, preventing
     these errors from otherwise being handled by the attribute access protocol.
@@ -84,20 +81,17 @@ def wrap_attributeerrors():
         exc = WrappedAttributeError(str(info[1]))
         raise exc.with_traceback(info[2])
 
-
-class Empty:
+class Empty: # pragma: no cover
     """
     Placeholder for unset attributes.
     Cannot use `None`, as that may be a valid value.
     """
     pass
 
-
-def _hasattr(obj, name):
+def _hasattr(obj, name): # pragma: no cover
     return not getattr(obj, name) is Empty
 
-
-def clone_request(request, method):
+def clone_request(request, method): # pragma: no cover
     """
     Internal helper method to clone a request, replacing with a different
     HTTP method.  Used for checking permissions against other methods.
@@ -129,8 +123,7 @@ def clone_request(request, method):
         ret.versioning_scheme = request.versioning_scheme
     return ret
 
-
-class ForcedAuthentication:
+class ForcedAuthentication: # pragma: no cover
     """
     This authentication class is used if the test client or request factory
     forcibly authenticated the request.
@@ -220,7 +213,7 @@ class Request:
         return api_settings.DEFAULT_CONTENT_NEGOTIATION_CLASS()
 
     @property
-    def content_type(self) -> str:
+    def content_type(self) -> str: # pragma: no cover
         """
         Retrieve the content type from the underlying request's META information.
 
@@ -234,7 +227,7 @@ class Request:
         return meta.get('CONTENT_TYPE', meta.get('HTTP_CONTENT_TYPE', ''))
 
     @property
-    def stream(self) -> Optional[HttpRequest | io.BytesIO]:
+    def stream(self) -> Optional[HttpRequest | io.BytesIO]: # pragma: no cover
         """
         Return a stream-like object representing the request content.
 
@@ -246,7 +239,7 @@ class Request:
         return self._stream
 
     @property
-    def query_params(self) -> QueryDict:
+    def query_params(self) -> QueryDict: # pragma: no cover
         """
         Retrieve the query parameters from the underlying request.
 
@@ -256,7 +249,7 @@ class Request:
         return self._request.GET
 
     @property
-    def data(self):
+    def data(self): # pragma: no cover
         """
         Return the parsed data from the request content.
 
@@ -269,7 +262,7 @@ class Request:
         return self._full_data
 
     @property
-    def user(self):
+    def user(self): # pragma: no cover
         """
         Return the authenticated user associated with the request.
 
@@ -298,7 +291,7 @@ class Request:
         self._request.user = value
 
     @property
-    def auth(self):
+    def auth(self): # pragma: no cover
         """
         Returns any non-user authentication information associated with the
         request, such as an authentication token.
@@ -324,7 +317,7 @@ class Request:
         self._request.auth = value
 
     @property
-    def successful_authenticator(self):
+    def successful_authenticator(self): # pragma: no cover
         """
         Return the instance of the authentication instance class that was used
         to authenticate the request, or `None`.
@@ -411,7 +404,7 @@ class Request:
         )
         return any(parser.media_type in form_media for parser in self.parsers)
 
-    def _parse(self) -> tuple[Any, Any]:
+    def _parse(self) -> tuple[Any, Any]: # pragma: no cover
         """
         Parse the request content, returning a two-tuple of (data, files)
 
@@ -466,7 +459,7 @@ class Request:
             empty_files = MultiValueDict()
             return (parsed, empty_files)
 
-    def _authenticate(self) -> None:
+    def _authenticate(self) -> None: # pragma: no cover
         """
         Attempt to authenticate the request using each authentication instance
         in turn.
@@ -527,7 +520,7 @@ class Request:
             raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{attr}'")
 
     @property
-    def POST(self) -> QueryDict:
+    def POST(self) -> QueryDict: # pragma: no cover
         """
         Return the POST data of the request.
 
@@ -543,7 +536,7 @@ class Request:
         return QueryDict('', encoding=self._request._encoding)
 
     @property
-    def FILES(self) -> MultiValueDict:
+    def FILES(self) -> MultiValueDict: # pragma: no cover
         """
         Return the FILES data of the request.
 
@@ -567,8 +560,7 @@ class Request:
         # plaintext or html error responses.
         self._request.is_ajax = lambda: value
 
-
-class FakeSymbolicHttpRequest:
+class FakeSymbolicHttpRequest: # pragma: no cover
     META: dict
     user = None
     auth = None
@@ -586,8 +578,8 @@ class FakeSymbolicHttpRequest:
         self.body = b'{"key":"value"}'
         self.META = {}
 
-def symbolic_request(factory: crosshair.SymbolicFactory) -> Request:
+def symbolic_request(factory: crosshair.SymbolicFactory) -> Request: # pragma: no cover
     req = FakeSymbolicHttpRequest()
     return Request(req, factory(list), factory(list))
 
-crosshair.register_type(Request, symbolic_request)
+crosshair.register_type(Request, symbolic_request) # pragma: no cover

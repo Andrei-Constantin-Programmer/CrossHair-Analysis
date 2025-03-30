@@ -13,6 +13,6 @@
     },
     {
         "file": "dataset\\request\\request.py",
-        "function": "test_request_symbolic"
+        "class": "Request"
     }
 ]
