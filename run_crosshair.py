@@ -40,11 +40,17 @@ def parse_arguments():
         action="store_true", 
         help="Print analysis results to console in addition to logging.")
     
+    parser.add_argument(
+        "--open-coverage",
+        action="store_true",
+        help="Open the generated coverage HTML report in the default browser."
+    )
+    
     args = parser.parse_args()
-    return args.file_path, args.function_name, args.class_name, args.verbose, args.console_dump
+    return args.file_path, args.function_name, args.class_name, args.verbose, args.console_dump, args.open_coverage
 
 def main():
-    file_path, function_name, class_name, verbose, console_dump = parse_arguments()
+    file_path, function_name, class_name, verbose, console_dump, open_coverage = parse_arguments()
     
     try:
         module = load_module_from_path(file_path)
@@ -57,17 +63,17 @@ def main():
             print(f"Error: The module does not contain a function named '{function_name}'.")
             sys.exit(1)
         target_function = getattr(module, function_name)
-        run_crosshair_analysis_function(target_function, verbose, console_dump)
+        run_crosshair_analysis_function(target_function, file_path, verbose, console_dump, open_coverage)
 
     elif class_name:
         if not hasattr(module, class_name):
             print(f"Error: The module does not contain a class named '{class_name}'.")
             sys.exit(1)
         target_class = getattr(module, class_name)
-        run_crosshair_analysis_class(target_class, verbose, console_dump)
+        run_crosshair_analysis_class(target_class, file_path, verbose, console_dump, open_coverage)
 
     else:
-        run_crosshair_analysis_module(module, verbose, console_dump)
+        run_crosshair_analysis_module(module, file_path, verbose, console_dump, open_coverage)
 
 if __name__ == "__main__":
     main()

@@ -22,7 +22,7 @@ pip install -r requirements.txt
 ## Run Analysis
 To run Crosshair, use the command-line interface:
 ```bash
-python run_crosshair.py <path_to_module> [function_name] [--verbose] [--console-dump]
+python run_crosshair.py <path_to_module> [function_name] [--verbose] [--console-dump] [--open-coverage]
 ```
 
 For example:
@@ -35,6 +35,7 @@ python run_crosshair.py dataset/bisect.py bisect_right
 - `[function_name]` (**Optional**) – Name of the function to analyse (default: `None`, meaning the class will be analysed instead).
 - `--verbose` (**Optional**) – Enables verbose output for detailed logging.
 - `--console-dump` (**Optional**) – Prints analysis results to the console in addition to logging.
+- `--open-coverage` (**Optional**) - Automatically opens the generated HTML coverage report in the default web browser after analysis.
 
 ### Analysis Help
 To display a help message with detailed usage instructions, run:

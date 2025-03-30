@@ -2,8 +2,8 @@ import os
 import datetime
 import re
 from crosshair.main import long_describe_message
+from src import ROOT_PATH
 
-ROOT_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "../"))
 LOGS_PATH = os.path.join(ROOT_PATH, "logs")
 
 def _remove_ansi(text):

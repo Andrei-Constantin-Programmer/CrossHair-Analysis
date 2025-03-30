@@ -4,3 +4,4 @@ argparse
 sympy
 regex
 django
+coverage
