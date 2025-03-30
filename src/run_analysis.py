@@ -54,4 +54,4 @@ def run_crosshair_analysis(analysis_function: Callable, target, path, verbose, c
         analysis_results = run_checkables(analysis_function(target, options))
 
     log_analysis_results(target, analysis_results, options, console_dump)
-    report_coverage(cov, open_coverage)
+    report_coverage(cov, target, open_coverage)
