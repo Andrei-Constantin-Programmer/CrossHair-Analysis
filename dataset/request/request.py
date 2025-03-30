@@ -160,6 +160,12 @@ class ForcedAuthentication: # pragma: no cover
 class Request:
     """
     Wrapper allowing to enhance a standard `HttpRequest` instance.
+
+    inv: "encoding" in self.parser_context and bool(self.parser_context["encoding"])
+    inv: self._data is Empty or self._full_data is not Empty
+    inv: not hasattr(self, "_authenticator") or (self._authenticator is None or (hasattr(self, "_user") and bool(self._user)))
+    inv: self._stream is Empty or self._stream is None or self._stream is self._request or hasattr(self._stream, "read")
+    inv: self._data is Empty or self._full_data is not Empty
     """
 
     # CrossHair cannot handle this precondition, and as such the parser_context parameter has been removed.

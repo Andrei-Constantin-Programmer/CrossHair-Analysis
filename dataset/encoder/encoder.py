@@ -86,6 +86,10 @@ class Encoder:
     This class converts text to tokenised integer representations and vice versa
     using a predefined vocabulary and a set of BPE merge rules. A caching mechanism is
     employed to improve efficiency.
+
+    inv: all(isinstance(k, str) and isinstance(v, int) for k, v in self.encoder.items())
+    inv: all(isinstance(k, int) and isinstance(v, str) for k, v in self.decoder.items())
+    inv: self.errors in {"strict", "replace", "ignore", "backslashreplace", "xmlcharrefreplace"}
     """
 
     @icontract.require(
