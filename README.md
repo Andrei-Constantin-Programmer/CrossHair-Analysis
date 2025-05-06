@@ -1,4 +1,6 @@
 # Assignment 2
+Project originally designed as an assignment for my Validation and Verification assignment at UCL.  
+Powered by [Crosshair](https://github.com/pschanely/CrossHair).
 
 ## Table of Contents
 - [Installing](#installing)
